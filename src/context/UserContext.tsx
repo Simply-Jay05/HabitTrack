@@ -9,6 +9,7 @@ import { User } from "firebase/auth";
 
 type UserContextType = {
   user: User | null;
+  setUser: (user: User) => void;
   loading: boolean;
 };
 
@@ -23,8 +24,18 @@ export const UserProvider = ({ children }: UserProviderProp) => {
   const [loading, setLoading] = useState(false);
 
   return (
-    <UserContext.Provider value={{ user, loading }}>
+    <UserContext.Provider value={{ user, loading, setUser }}>
       {children}
     </UserContext.Provider>
   );
+};
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+
+  if (!context) {
+    throw new Error("useUser must be insider UserContextProvider");
+  }
+
+  return context;
 };

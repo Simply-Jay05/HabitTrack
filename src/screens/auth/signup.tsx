@@ -18,11 +18,12 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../../config/firebase";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AuthStack } from "../../utils/types";
+import { useAuth } from "../../context/AuthContext";
 
 type SignupType = NativeStackNavigationProp<AuthStack, "Signup">;
 
@@ -32,26 +33,13 @@ type SignupType = NativeStackNavigationProp<AuthStack, "Signup">;
 export default function Signup() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<SignupType>();
+  const { Signup } = useAuth();
+
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordConfirmVisible, setPasswordConfirmVisible] = useState(false);
 
   const onSubmit = async (data: SignupSchemaType) => {
-    setLoading(true);
-    // @Johndoe01
-    try {
-      const result = await createUserWithEmailAndPassword(
-        auth,
-        data.email,
-        data.password,
-      );
-
-      if (result) {
-        console.log("SIGNUP SUCEESSFUL", result.user);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("ERROR SIGNING UP", error);
-      setLoading(false);
-    }
+    Signup(data.email, data.password, data.fullName);
   };
 
   const signupSchema = z
@@ -197,7 +185,7 @@ export default function Signup() {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter your pasword"
-                    secureTextEntry={true}
+                    secureTextEntry={!passwordVisible}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -205,6 +193,14 @@ export default function Signup() {
                 )}
               />
             </View>
+
+            <Ionicons
+              style={styles.inputIcon}
+              name={passwordVisible ? "eye" : "eye-off"}
+              size={24}
+              color="gray"
+              onPress={() => setPasswordVisible(!passwordVisible)}
+            />
           </View>
 
           {touchedFields.password && errors.password && (
@@ -232,7 +228,7 @@ export default function Signup() {
                   <TextInput
                     style={styles.input}
                     placeholder="Confirm your password"
-                    secureTextEntry={true}
+                    secureTextEntry={!passwordConfirmVisible}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -240,6 +236,14 @@ export default function Signup() {
                 )}
               />
             </View>
+
+            <Ionicons
+              style={styles.inputIcon}
+              name={passwordConfirmVisible ? "eye" : "eye-off"}
+              size={24}
+              color="gray"
+              onPress={() => setPasswordConfirmVisible(!passwordConfirmVisible)}
+            />
           </View>
 
           {touchedFields.passwordConfirmation &&

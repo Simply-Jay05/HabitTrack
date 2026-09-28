@@ -8,6 +8,7 @@ export type AppStack = {
   UserTab: undefined;
   AddHabit: undefined;
   Details: undefined;
+  FirestoreDemo: undefined;
 };
 
 export type UserTabStack = {

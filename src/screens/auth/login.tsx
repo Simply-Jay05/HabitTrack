@@ -20,31 +20,19 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../config/firebase";
+import { useAuth } from "../../context/AuthContext";
 
 // npm install firebase
 // npx expo install @react-native-async-storage/async-storage
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
+  const { Login } = useAuth();
+
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const onSubmit = async (data: LoginSchemaType) => {
-    setLoading(true);
-    try {
-      const result = await signInWithEmailAndPassword(
-        auth,
-        data.email,
-        data.password,
-      );
-
-      if (result) {
-        console.log("LOGIN SUCEESSFUL", result.user);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("ERROR LOGINING IN", error);
-      setLoading(false);
-    }
+    Login(data.email, data.password);
   };
 
   const loginSchema = z.object({
@@ -149,7 +137,7 @@ export default function Login() {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter your pasword"
-                    secureTextEntry={true}
+                    secureTextEntry={!passwordVisible}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -157,6 +145,14 @@ export default function Login() {
                 )}
               />
             </View>
+
+            <Ionicons
+              style={styles.inputIcon}
+              name={passwordVisible ? "eye" : "eye-off"}
+              size={24}
+              color="gray"
+              onPress={() => setPasswordVisible(!passwordVisible)}
+            />
           </View>
 
           {touchedFields.password && errors.password && (

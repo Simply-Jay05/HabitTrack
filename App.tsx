@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import * as Font from "expo-font";
 import * as splashScreen from "expo-splash-screen";
 import { RootNavigator } from "./src/navigation/rootnavigator";
+import { UserProvider } from "./src/context/UserContext";
+import { AuthProvider } from "./src/context/AuthContext";
 
 splashScreen.preventAutoHideAsync();
 
@@ -20,5 +22,11 @@ export default function App() {
 
     loadFonts();
   }, []);
-  return <RootNavigator />;
+  return (
+    <AuthProvider>
+      <UserProvider>
+        <RootNavigator />
+      </UserProvider>
+    </AuthProvider>
+  );
 }
