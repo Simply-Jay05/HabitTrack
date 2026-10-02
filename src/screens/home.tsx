@@ -22,6 +22,10 @@ export default function HomeScreen() {
         title="Go to Firstore Demo"
         onPress={() => navigation.navigate("FirestoreDemo")}
       />
+      <Button
+        title="Go to Premium"
+        onPress={() => navigation.navigate("Premium")}
+      />
     </View>
   );
 }

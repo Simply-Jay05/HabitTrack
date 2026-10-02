@@ -9,6 +9,7 @@ import Details from "../screens/details";
 import Login from "../screens/auth/login";
 import { useAuth } from "../context/AuthContext";
 import FirestoreDemo from "../screens/firestoreDemo";
+import Premium from "../screens/Premium";
 
 const AuthNav = createNativeStackNavigator<AuthStack>();
 
@@ -47,6 +48,7 @@ function AppScreens() {
       <AppNav.Screen name="AddHabit" component={AddHabit} />
       <AppNav.Screen name="Details" component={Details} />
       <AppNav.Screen name="FirestoreDemo" component={FirestoreDemo} />
+      <AppNav.Screen name="Premium" component={Premium} />
     </AppNav.Navigator>
   );
 }
