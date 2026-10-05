@@ -39,7 +39,7 @@ function AuthScreens() {
 
 function AppScreens() {
   return (
-    <AppNav.Navigator>
+    <AppNav.Navigator screenOptions={{ headerShown: false }}>
       <AppNav.Screen
         name="UserTab"
         component={UserTab}

@@ -11,7 +11,7 @@ const Tab = createBottomTabNavigator<UserTabStack>();
 // add icons for each tab
 export function UserTab() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator screenOptions={{ headerShown: false }}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}

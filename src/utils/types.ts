@@ -7,7 +7,9 @@ export type AuthStack = {
 export type AppStack = {
   UserTab: undefined;
   AddHabit: undefined;
-  Details: undefined;
+  Details: {
+    habitId: string;
+  };
   FirestoreDemo: undefined;
   Premium: undefined;
 };
