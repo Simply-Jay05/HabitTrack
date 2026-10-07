@@ -12,6 +12,7 @@ export type AppStack = {
   };
   FirestoreDemo: undefined;
   Premium: undefined;
+  ImagePicker: undefined;
 };
 
 export type UserTabStack = {

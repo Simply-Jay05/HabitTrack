@@ -53,7 +53,10 @@ export default function Home() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.settingsBtn}>
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => navigation.navigate("ImagePicker")}
+          >
             <Ionicons name="settings-outline" size={wp("7%")} color="black" />
           </TouchableOpacity>
         </View>

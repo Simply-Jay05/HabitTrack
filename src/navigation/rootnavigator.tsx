@@ -10,6 +10,7 @@ import Login from "../screens/auth/login";
 import { useAuth } from "../context/AuthContext";
 import FirestoreDemo from "../screens/firestoreDemo";
 import Premium from "../screens/Premium";
+import ImagePicker from "../screens/imagePicker";
 
 const AuthNav = createNativeStackNavigator<AuthStack>();
 
@@ -49,6 +50,7 @@ function AppScreens() {
       <AppNav.Screen name="Details" component={Details} />
       <AppNav.Screen name="FirestoreDemo" component={FirestoreDemo} />
       <AppNav.Screen name="Premium" component={Premium} />
+      <AppNav.Screen name="ImagePicker" component={ImagePicker} />
     </AppNav.Navigator>
   );
 }
