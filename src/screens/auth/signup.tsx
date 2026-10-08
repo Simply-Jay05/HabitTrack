@@ -18,8 +18,6 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "../../config/firebase";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AuthStack } from "../../utils/types";
@@ -31,9 +29,8 @@ type SignupType = NativeStackNavigationProp<AuthStack, "Signup">;
 // npx expo install @react-native-async-storage/async-storage
 
 export default function Signup() {
-  const [loading, setLoading] = useState(false);
   const navigation = useNavigation<SignupType>();
-  const { Signup } = useAuth();
+  const { Signup, loading } = useAuth();
 
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [passwordConfirmVisible, setPasswordConfirmVisible] = useState(false);

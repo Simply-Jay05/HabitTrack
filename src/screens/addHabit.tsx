@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { COLORS } from "../utils/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,11 +17,21 @@ import {
 } from "react-native-responsive-screen";
 import { useState } from "react";
 import { Dropdown } from "react-native-element-dropdown";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  CompositeNavigationProp,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { AppStack } from "../utils/types";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { AppStack, UserTabStack } from "../utils/types";
+import { habits } from "../utils/dummyData";
+import { useAuth } from "../context/AuthContext";
+import { createHabit } from "../services/habitServices";
 
-type AddHabitType = NativeStackNavigationProp<AppStack, "AddHabit">;
+type AddHabitType = CompositeNavigationProp<
+  BottomTabNavigationProp<UserTabStack>,
+  NativeStackNavigationProp<AppStack, "AddHabit">
+>;
 
 export default function AddHabit() {
   const categories = [
@@ -59,13 +71,52 @@ export default function AddHabit() {
     "briefcase-outline",
   ];
 
-  const [selectedCategory, setSelectedCategory] = useState(""); // To hold the value of the selected category
-  const [selectedFrequency, setSelectedFrequency] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(undefined); // To hold the value of the selected category
+  const [selectedFrequency, setSelectedFrequency] = useState(undefined);
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [selectedIcon, setSelectedIcon] = useState(icons[0]);
+  const [habitName, setHabitName] = useState<string | undefined>(undefined);
+  const [habitDescription, setHabitDescription] = useState<string | undefined>(
+    undefined,
+  );
+  const [target, setTarget] = useState<string | undefined>(undefined);
+  const [targetUnit, setTargetUnit] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
 
   // Declaring Navigation
   const navigation = useNavigation<AddHabitType>();
+
+  // Get user from AuthContext
+  const { user } = useAuth();
+  const userId = user?.uid;
+
+  const saveHabit = async () => {
+    setLoading(true);
+    const habitData = {
+      userId: userId,
+      name: habitName,
+      description: habitDescription,
+      category: selectedCategory,
+      freqency: selectedFrequency,
+      target: target,
+      targetUnit: targetUnit,
+      color: selectedColor,
+      icon: selectedIcon,
+      isActive: true,
+      createdAt: new Date(),
+    };
+    await createHabit(habitData);
+    setLoading(false);
+    Alert.alert("Created Succesfully", "New habit created successfully", [
+      {
+        text: "ok",
+        onPress: () =>
+          navigation.navigate("UserTab", {
+            screen: "Home",
+          }),
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,7 +161,12 @@ export default function AddHabit() {
                 size={wp("5.5%")}
                 color={COLORS.textPrimary}
               />
-              <TextInput style={styles.input} placeholder="e.g Exercise" />
+              <TextInput
+                style={styles.input}
+                placeholder="e.g Reading"
+                onChangeText={(name) => setHabitName(name)}
+                value={habitName || ""}
+              />
             </View>
           </View>
 
@@ -132,6 +188,8 @@ export default function AddHabit() {
                 multiline={true} // Allows typing across multiple lines
                 numberOfLines={5} // Suggests a starting height (Android)
                 textAlignVertical="top" // Forces placeholder & text to start at the top
+                onChangeText={(desc) => setHabitDescription(desc)}
+                value={habitDescription || ""}
               />
             </View>
           </View>
@@ -206,6 +264,8 @@ export default function AddHabit() {
                   style={styles.input}
                   placeholder="e.g 30"
                   keyboardType="numeric"
+                  onChangeText={(target) => setTarget(target)}
+                  value={target || ""}
                 />
               </View>
             </View>
@@ -222,7 +282,12 @@ export default function AddHabit() {
                   size={wp("5.5%")}
                   color={COLORS.textPrimary}
                 />
-                <TextInput style={styles.input} placeholder="e.g Minutes" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g Minutes"
+                  onChangeText={(targetUnit) => setTargetUnit(targetUnit)}
+                  value={targetUnit || ""}
+                />
               </View>
             </View>
           </View>
@@ -279,7 +344,13 @@ export default function AddHabit() {
 
           {/* Save Button */}
           <TouchableOpacity style={styles.saveBtn}>
-            <Text style={styles.saveBtnText}>Save Habit</Text>
+            {loading ? (
+              <ActivityIndicator size="large" color={COLORS.white} />
+            ) : (
+              <Text style={styles.saveBtnText} onPress={saveHabit}>
+                Save Habit
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

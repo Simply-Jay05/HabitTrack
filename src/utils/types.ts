@@ -1,3 +1,4 @@
+import { NavigatorScreenParams } from "@react-navigation/native";
 export type AuthStack = {
   Welcome: undefined;
   Signup: undefined;
@@ -5,7 +6,7 @@ export type AuthStack = {
 };
 
 export type AppStack = {
-  UserTab: undefined;
+  UserTab: NavigatorScreenParams<UserTabStack>;
   AddHabit: undefined;
   Details: {
     habitId: string;

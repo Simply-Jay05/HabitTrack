@@ -16,7 +16,9 @@ import {
   User,
   updateEmail,
 } from "firebase/auth";
-import { email } from "zod";
+import { Alert } from "react-native";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 type AuthContextType = {
   user: User | null;
@@ -71,11 +73,19 @@ export const AuthProvider = ({ children }: AuthProviderProp) => {
           displayName: fullName,
           photoURL: null,
         });
-        console.log("SIGNUP SUCEESSFUL", result.user);
+
+        const userRef = doc(db, "users", result.user.uid);
+        await setDoc(userRef, {
+          displayName: fullName,
+          email: email,
+          photoURL: null,
+          createdAt: new Date(),
+        });
       }
 
       setLoading(false);
     } catch (error) {
+      Alert.alert("Error", "Error creating account. Try Again.");
       console.error("ERROR SIGNING UP", error);
       setLoading(false);
     }
@@ -87,7 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProp) => {
       await signOut(auth);
       console.log("LOGOUT SUCCESSFULLY");
     } catch (error) {
-      console.error("ERROR LOGING OUT", error);
+      Alert.alert("Error", "Error trying to logout");
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,8 +15,12 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { COLORS } from "../utils/colors";
+import { useAuth } from "../context/AuthContext";
 
 export default function Settings() {
+  // To get logout function from AuthContext
+  const { Logout, loading } = useAuth();
+
   // Realistic dummy profile data.
   const user = {
     id: "user123",
@@ -72,7 +77,7 @@ export default function Settings() {
         text: "Logout",
         style: "destructive",
         onPress: () => {
-          console.log("Logout user");
+          Logout();
         },
       },
     ]);
@@ -204,13 +209,19 @@ export default function Settings() {
 
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons
-            name="log-out-outline"
-            size={wp("5.5%")}
-            color={COLORS.primary}
-          />
+          {loading ? (
+            <ActivityIndicator size="large" />
+          ) : (
+            <View style={{ flexDirection: "row", gap: wp("2%") }}>
+              <Ionicons
+                name="log-out-outline"
+                size={wp("5.5%")}
+                color={COLORS.primary}
+              />
 
-          <Text style={styles.logoutText}>Log Out</Text>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

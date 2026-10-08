@@ -14,20 +14,20 @@ import {
 } from "react-native-responsive-screen";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../utils/colors";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AuthStack } from "../../utils/types";
 
-// npm install firebase
-// npx expo install @react-native-async-storage/async-storage
+type LoginType = NativeStackNavigationProp<AuthStack, "Login">;
 
 export default function Login() {
-  const [loading, setLoading] = useState(false);
-  const { Login } = useAuth();
+  const { Login, loading } = useAuth();
+  const navigation = useNavigation<LoginType>();
 
   const [passwordVisible, setPasswordVisible] = useState(false);
 
@@ -37,16 +37,7 @@ export default function Login() {
 
   const loginSchema = z.object({
     email: z.email("Please enter a valid email"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must have at least one uppercase letter")
-      .regex(/[a-z]/, "Password must have at least one lowercase letter")
-      .regex(/[0-9]/, "Password must have at least one number")
-      .regex(
-        /[^a-zA-Z0-9]/,
-        "Password must have at least one special character",
-      ),
+    password: z.string().min(1, "Password is required"),
   });
 
   type LoginSchemaType = z.infer<typeof loginSchema>;
@@ -75,9 +66,8 @@ export default function Login() {
 
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Start your journey with HabitTrack</Text>
-        {/* <Text style={styles.subtitle}>Welcome {name}</Text> */}
+        <Text style={styles.title}>Login </Text>
+        <Text style={styles.subtitle}>Enter your credentials to log in</Text>
       </View>
 
       {/* Form Section */}
@@ -165,13 +155,18 @@ export default function Login() {
           {loading ? (
             <ActivityIndicator size="large" color={COLORS.altColor} />
           ) : (
-            <Text style={styles.btnText}>Sign Up</Text>
+            <Text style={styles.btnText}>Log In</Text>
           )}
         </TouchableOpacity>
       </View>
       <View style={styles.bottom}>
         <Text style={styles.bottomText}>Don't have an account?</Text>
-        <Text style={styles.bottomLink}>Sign up</Text>
+        <Text
+          style={styles.bottomLink}
+          onPress={() => navigation.navigate("Signup")}
+        >
+          Sign up
+        </Text>
       </View>
     </View>
   );
