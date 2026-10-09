@@ -23,6 +23,10 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { AppStack, UserTabStack } from "../utils/types";
+import { useEffect, useState } from "react";
+import { Habit, getActiveHabits } from "../services/habitServices";
+import { useAuth } from "../context/AuthContext";
+import { getTodayCompletions } from "../services/completionService";
 
 type HomeType = CompositeNavigationProp<
   BottomTabNavigationProp<UserTabStack, "Home">,
@@ -31,12 +35,51 @@ type HomeType = CompositeNavigationProp<
 
 export default function Home() {
   const navigation = useNavigation<HomeType>();
-  const completedHabits = habits.filter(
+  const { user } = useAuth();
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [completedHabitIds, setCompletedHabitIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Habits Listener
+  useEffect(() => {
+    if (!user?.uid) {
+      return;
+    }
+    const unsubscirbe = getActiveHabits(user.uid, (data) => {
+      setHabits(data);
+      setLoading(false);
+    });
+
+    return unsubscirbe;
+  }, [user?.uid]);
+
+  // Completion Listener
+  useEffect(() => {
+    if (!user?.uid) {
+      return;
+    }
+
+    const today = new Intl.DateTimeFormat("en-CA").format(new Date());
+
+    const unsubscribe = getTodayCompletions(user.uid, today, (habitIds) =>
+      setCompletedHabitIds(habitIds),
+    );
+
+    return unsubscribe;
+  }, [user?.uid]);
+
+  const todayHabits = habits.map((habit) => ({
+    ...habit,
+    completed: completedHabitIds.includes(habit.id),
+  }));
+
+  const completedHabits = todayHabits.filter(
     (habit) => habit.completed === true,
   ).length;
-  const totalHabits = habits.length;
 
-  const progess = habits.length > 0 ? completedHabits / totalHabits : 0;
+  const totalHabits = todayHabits.length;
+
+  const progess = todayHabits.length > 0 ? completedHabits / totalHabits : 0;
 
   const percentages = Math.round(progess * 100);
 
@@ -46,10 +89,17 @@ export default function Home() {
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.userSection}>
-            <Image style={styles.profileImg} source={user.profileImage} />
+            <Image
+              style={styles.profileImg}
+              source={
+                user?.photoURL
+                  ? { uri: user?.photoURL }
+                  : require("../../assets/profile.png")
+              }
+            />
             <View>
               <Text style={styles.greeting}>Good Morning</Text>
-              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.userName}>{user?.displayName}</Text>
             </View>
           </View>
 
@@ -116,7 +166,7 @@ export default function Home() {
           </View>
 
           {/* Habits Card */}
-          {habits.map((habit) => (
+          {todayHabits.map((habit) => (
             <TouchableOpacity
               key={habit.id}
               style={styles.habitCard}

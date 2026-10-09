@@ -24,9 +24,13 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { AppStack, UserTabStack } from "../utils/types";
-import { habits } from "../utils/dummyData";
 import { useAuth } from "../context/AuthContext";
 import { createHabit } from "../services/habitServices";
+import { habitSchema, HabitFormType } from "../validations/habitSchema";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { colors, categories, icons, frequencies } from "../utils/functions";
+import { serverTimestamp } from "firebase/firestore";
 
 type AddHabitType = CompositeNavigationProp<
   BottomTabNavigationProp<UserTabStack>,
@@ -34,55 +38,7 @@ type AddHabitType = CompositeNavigationProp<
 >;
 
 export default function AddHabit() {
-  const categories = [
-    { label: "Health", value: "Health" },
-    { label: "Fitness", value: "Fitness" },
-    { label: "Study", value: "Study" },
-    { label: "Personal", value: "Personal" },
-    { label: "Mindfulness", value: "Mindfulness" },
-    { label: "Productivity", value: "Productivity" },
-    { label: "Finance", value: "Finance" },
-    { label: "Social", value: "Social" },
-  ];
-
-  const frequencies = [
-    { label: "Daily", value: "Daily" },
-    { label: "Weekly", value: "Weekly" },
-  ];
-
-  const colors = [
-    COLORS.blue,
-    COLORS.cyan,
-    COLORS.green,
-    COLORS.orange,
-    COLORS.purple,
-    COLORS.pink,
-  ];
-
-  const icons: (keyof typeof Ionicons.glyphMap)[] = [
-    "water-outline",
-    "cash-outline",
-    "barbell-outline",
-    "laptop-outline",
-    "walk-outline",
-    "book-outline",
-    "leaf-outline",
-    "restaurant-outline",
-    "briefcase-outline",
-  ];
-
-  const [selectedCategory, setSelectedCategory] = useState(undefined); // To hold the value of the selected category
-  const [selectedFrequency, setSelectedFrequency] = useState(undefined);
-  const [selectedColor, setSelectedColor] = useState(colors[0]);
-  const [selectedIcon, setSelectedIcon] = useState(icons[0]);
-  const [habitName, setHabitName] = useState<string | undefined>(undefined);
-  const [habitDescription, setHabitDescription] = useState<string | undefined>(
-    undefined,
-  );
-  const [target, setTarget] = useState<string | undefined>(undefined);
-  const [targetUnit, setTargetUnit] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
-
   // Declaring Navigation
   const navigation = useNavigation<AddHabitType>();
 
@@ -90,32 +46,64 @@ export default function AddHabit() {
   const { user } = useAuth();
   const userId = user?.uid;
 
-  const saveHabit = async () => {
-    setLoading(true);
-    const habitData = {
-      userId: userId,
-      name: habitName,
-      description: habitDescription,
-      category: selectedCategory,
-      freqency: selectedFrequency,
-      target: target,
-      targetUnit: targetUnit,
-      color: selectedColor,
-      icon: selectedIcon,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    await createHabit(habitData);
-    setLoading(false);
-    Alert.alert("Created Succesfully", "New habit created successfully", [
-      {
-        text: "ok",
-        onPress: () =>
-          navigation.navigate("UserTab", {
-            screen: "Home",
-          }),
-      },
-    ]);
+  // React Hook Form
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, touchedFields },
+  } = useForm<HabitFormType>({
+    defaultValues: {
+      habitName: "",
+      description: "",
+      category: "",
+      frequency: "",
+      target: "",
+      targetUnit: "",
+      color: colors[0],
+      icon: icons[0],
+    },
+    resolver: zodResolver(habitSchema),
+    mode: "onBlur",
+  });
+
+  const saveHabit = async (data: HabitFormType) => {
+    if (!userId) {
+      Alert.alert("Error", "You must be logged in to create a habit.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const habitData = {
+        userId: userId,
+        name: data.habitName,
+        description: data.description,
+        category: data.category,
+        frequency: data.frequency,
+        target: data.target,
+        targetUnit: data.targetUnit,
+        color: data.color,
+        icon: data.icon,
+        isActive: true,
+        createdAt: serverTimestamp(),
+      };
+      await createHabit(habitData);
+
+      Alert.alert("Created Succesfully", "New habit created successfully", [
+        {
+          text: "ok",
+          onPress: () =>
+            navigation.navigate("UserTab", {
+              screen: "Home",
+            }),
+        },
+      ]);
+    } catch (error) {
+      console.log("Error creating habit:", error);
+
+      Alert.alert("Error", "Unable to create habit. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -161,13 +149,24 @@ export default function AddHabit() {
                 size={wp("5.5%")}
                 color={COLORS.textPrimary}
               />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g Reading"
-                onChangeText={(name) => setHabitName(name)}
-                value={habitName || ""}
+              <Controller
+                control={control}
+                name="habitName"
+                render={({ field: { value, onBlur, onChange } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g Reading"
+                    onChangeText={onChange}
+                    value={value}
+                    onBlur={onBlur}
+                  />
+                )}
               />
             </View>
+
+            {errors.habitName && (
+              <Text style={styles.errorText}>{errors.habitName.message}</Text>
+            )}
           </View>
 
           {/* Description Field */}
@@ -182,16 +181,27 @@ export default function AddHabit() {
                 size={wp("5.5%")}
                 color="black"
               />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g Add a short description..."
-                multiline={true} // Allows typing across multiple lines
-                numberOfLines={5} // Suggests a starting height (Android)
-                textAlignVertical="top" // Forces placeholder & text to start at the top
-                onChangeText={(desc) => setHabitDescription(desc)}
-                value={habitDescription || ""}
+              <Controller
+                control={control}
+                name="description"
+                render={({ field: { value, onBlur, onChange } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g Add a short description..."
+                    multiline={true} // Allows typing across multiple lines
+                    numberOfLines={5} // Suggests a starting height (Android)
+                    textAlignVertical="top" // Forces placeholder & text to start at the top
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    value={value}
+                  />
+                )}
               />
             </View>
+
+            {errors.description && (
+              <Text style={styles.errorText}>{errors.description.message}</Text>
+            )}
           </View>
 
           {/* Category Field */}
@@ -206,18 +216,29 @@ export default function AddHabit() {
                 size={wp("5.5%")}
                 color={COLORS.textPrimary}
               />
-              <Dropdown
-                data={categories}
-                placeholder="Select Category"
-                labelField="label"
-                valueField="value"
-                value={selectedCategory}
-                onChange={(item) => setSelectedCategory(item.value)} // Sets the selected category in our useState
-                style={styles.dropdown}
-                selectedTextStyle={styles.dropdownText}
-                placeholderStyle={styles.dropdownText}
+              <Controller
+                control={control}
+                name="category"
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <Dropdown
+                    data={categories}
+                    placeholder="Select Category"
+                    labelField="label"
+                    valueField="value"
+                    value={value}
+                    onBlur={onBlur}
+                    onChange={(item) => onChange(item.value)} // Sets the selected category in our useState
+                    style={styles.dropdown}
+                    selectedTextStyle={styles.dropdownText}
+                    placeholderStyle={styles.dropdownText}
+                  />
+                )}
               />
             </View>
+
+            {errors.category && (
+              <Text style={styles.errorText}>{errors.category.message}</Text>
+            )}
           </View>
 
           {/* Frequency Field */}
@@ -232,18 +253,29 @@ export default function AddHabit() {
                 size={wp("5.5%")}
                 color={COLORS.textPrimary}
               />
-              <Dropdown
-                data={frequencies}
-                placeholder="Select frequency"
-                labelField="label"
-                valueField="value"
-                value={selectedFrequency}
-                onChange={(item) => setSelectedFrequency(item.value)} // Sets the selected frequency in our useState
-                style={styles.dropdown}
-                selectedTextStyle={styles.dropdownText}
-                placeholderStyle={styles.dropdownText}
+              <Controller
+                control={control}
+                name="frequency"
+                render={({ field: { value, onBlur, onChange } }) => (
+                  <Dropdown
+                    data={frequencies}
+                    placeholder="Select frequency"
+                    labelField="label"
+                    valueField="value"
+                    value={value}
+                    onBlur={onBlur}
+                    onChange={(item) => onChange(item.value)} // Sets the selected frequency in our useState
+                    style={styles.dropdown}
+                    selectedTextStyle={styles.dropdownText}
+                    placeholderStyle={styles.dropdownText}
+                  />
+                )}
               />
             </View>
+
+            {errors.frequency && (
+              <Text style={styles.errorText}>{errors.frequency.message}</Text>
+            )}
           </View>
 
           {/* Tagets Row */}
@@ -260,14 +292,24 @@ export default function AddHabit() {
                   size={wp("5.5%")}
                   color={COLORS.textPrimary}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g 30"
-                  keyboardType="numeric"
-                  onChangeText={(target) => setTarget(target)}
-                  value={target || ""}
+                <Controller
+                  control={control}
+                  name="target"
+                  render={({ field: { value, onBlur, onChange } }) => (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g 30"
+                      keyboardType="numeric"
+                      onChangeText={onChange}
+                      value={value}
+                      onBlur={onBlur}
+                    />
+                  )}
                 />
               </View>
+              {errors.target && (
+                <Text style={styles.errorText}>{errors.target.message}</Text>
+              )}
             </View>
 
             {/* Target Unit Field */}
@@ -282,13 +324,26 @@ export default function AddHabit() {
                   size={wp("5.5%")}
                   color={COLORS.textPrimary}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g Minutes"
-                  onChangeText={(targetUnit) => setTargetUnit(targetUnit)}
-                  value={targetUnit || ""}
+                <Controller
+                  control={control}
+                  name="targetUnit"
+                  render={({ field: { value, onBlur, onChange } }) => (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g Minutes"
+                      onChangeText={onChange}
+                      value={value}
+                      onBlur={onBlur}
+                    />
+                  )}
                 />
               </View>
+
+              {errors.targetUnit && (
+                <Text style={styles.errorText}>
+                  {errors.targetUnit.message}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -298,22 +353,28 @@ export default function AddHabit() {
               Color <Text style={styles.required}>*</Text>
             </Text>
 
-            <View style={styles.colorView}>
-              {colors.map((color) => (
-                <TouchableOpacity
-                  style={[
-                    styles.colorOption,
-                    selectedColor === color && styles.selectedColor,
-                  ]}
-                  key={color}
-                  onPress={() => setSelectedColor(color)}
-                >
-                  <View
-                    style={[styles.colorCircle, { backgroundColor: color }]}
-                  ></View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Controller
+              control={control}
+              name="color"
+              render={({ field: { value, onChange } }) => (
+                <View style={styles.colorView}>
+                  {colors.map((color) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.colorOption,
+                        value === color && styles.selectedColor,
+                      ]}
+                      key={color}
+                      onPress={() => onChange(color)}
+                    >
+                      <View
+                        style={[styles.colorCircle, { backgroundColor: color }]}
+                      ></View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            />
           </View>
 
           {/* Icon Field */}
@@ -322,34 +383,42 @@ export default function AddHabit() {
               Icons <Text style={styles.required}>*</Text>
             </Text>
 
-            <ScrollView horizontal contentContainerStyle={styles.iconView}>
-              {icons.map((icon) => (
-                <TouchableOpacity
-                  style={[
-                    styles.iconOption,
-                    selectedIcon === icon && styles.selectedIcon,
-                  ]}
-                  key={icon}
-                  onPress={() => setSelectedIcon(icon)}
-                >
-                  <Ionicons
-                    name={icon}
-                    size={wp("5.5%")}
-                    color={COLORS.textPrimary}
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <Controller
+              control={control}
+              name="icon"
+              render={({ field: { value, onChange } }) => (
+                <ScrollView horizontal contentContainerStyle={styles.iconView}>
+                  {icons.map((icon) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.iconOption,
+                        value === icon && styles.selectedIcon,
+                      ]}
+                      key={icon}
+                      onPress={() => onChange(icon)}
+                    >
+                      <Ionicons
+                        name={icon}
+                        size={wp("5.5%")}
+                        color={COLORS.textPrimary}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            />
           </View>
 
           {/* Save Button */}
-          <TouchableOpacity style={styles.saveBtn}>
+          <TouchableOpacity
+            style={styles.saveBtn}
+            onPress={handleSubmit(saveHabit)}
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator size="large" color={COLORS.white} />
             ) : (
-              <Text style={styles.saveBtnText} onPress={saveHabit}>
-                Save Habit
-              </Text>
+              <Text style={styles.saveBtnText}>Save Habit</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -404,6 +473,11 @@ const styles = StyleSheet.create({
     fontSize: wp("4%"),
     fontFamily: "Bold",
     color: COLORS.textPrimary,
+  },
+  errorText: {
+    fontSize: wp("3%"),
+    fontFamily: "Regular",
+    color: COLORS.error,
   },
   required: {
     color: COLORS.primary,
@@ -512,7 +586,6 @@ const styles = StyleSheet.create({
     borderRadius: wp("3%"),
     marginTop: hp("1%"),
   },
-
   saveBtnText: {
     fontSize: wp("4.2%"),
     fontFamily: "Bold",
